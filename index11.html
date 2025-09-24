@@ -1,280 +1,618 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D Runner – Jump, Restart & Score</title>
-<style>
-  body { margin:0; overflow:hidden; background:#000; font-family:sans-serif; }
-  #ui {
-    position:absolute;
-    bottom:20px;
-    width:100%;
-    text-align:center;
-    z-index:10;
-  }
-  button {
-    background:#ff6600;
-    border:none;
-    color:#fff;
-    font-size:20px;
-    padding:10px 18px;
-    margin:0 8px;
-    border-radius:10px;
-    cursor:pointer;
-  }
-  #status {
-    position:absolute;
-    top:20px;
-    left:50%;
-    transform:translateX(-50%);
-    background:#ff0000cc;
-    color:#fff;
-    padding:8px 16px;
-    border-radius:10px;
-    display:none;
-  }
-  #restartBtn{
-    display:none;
-    position:absolute;
-    top:70px;
-    left:50%;
-    transform:translateX(-50%);
-    font-size:22px;
-    padding:8px 16px;
-  }
-  #score{
-    position:absolute;
-    top:20px;
-    left:20px;
-    color:#fff;
-    font-size:22px;
-  }
-</style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
-    "GLTFLoader": "https://unpkg.com/three@0.164.1/examples/jsm/loaders/GLTFLoader.js"
-  }
-}
-</script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3D Runner – لعبة القفز والتحدي</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #ui {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 10px;
+        }
+        
+        .control-btn {
+            background: linear-gradient(145deg, #ff6600, #e65500);
+            border: none;
+            color: #fff;
+            font-size: clamp(16px, 5vw, 24px);
+            padding: clamp(12px, 4vw, 16px) clamp(18px, 6vw, 24px);
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            min-width: 25vw;
+            touch-action: manipulation;
+            font-weight: bold;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 10px;
+            display: none;
+            font-size: clamp(16px, 4vw, 20px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            z-index: 20;
+            text-align: center;
+        }
+        
+        #restartBtn {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(18px, 5vw, 26px);
+            padding: 12px 30px;
+            z-index: 20;
+            background: linear-gradient(145deg, #00cc66, #00b359);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+        
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            font-size: clamp(18px, 5vw, 24px);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 90%;
+            z-index: 30;
+            display: block;
+        }
+        
+        #instructions h2 {
+            margin-bottom: 15px;
+            color: #ff6600;
+        }
+        
+        #instructions p {
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+        
+        #startBtn {
+            margin-top: 20px;
+            background: linear-gradient(145deg, #ff6600, #e65500);
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 20px;
+            text-align: center;
+            z-index: 100;
+        }
+        
+        #pauseBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            padding: 10px 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            #ui {
+                bottom: 10px;
+                gap: 10px;
+            }
+            
+            .control-btn {
+                min-width: 28vw;
+                padding: 14px 10px;
+            }
+            
+            #score {
+                top: 10px;
+                left: 10px;
+            }
+            
+            #pauseBtn {
+                top: 10px;
+                right: 10px;
+            }
+        }
+        
+        @media (max-height: 500px) {
+            #ui {
+                bottom: 5px;
+            }
+            
+            .control-btn {
+                padding: 10px 8px;
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="ui">
-  <button id="leftBtn">⬅️ يسار</button>
-  <button id="jumpBtn">⏫ قفز</button>
-  <button id="rightBtn">➡️ يمين</button>
-</div>
-<div id="status">💥 اصطدام!</div>
-<button id="restartBtn">🔄 إعادة اللعب</button>
-<div id="score">نقاط: 0</div>
+    <div id="gameContainer">
+        <div id="loading">جاري تحميل اللعبة...</div>
+        
+        <div id="instructions">
+            <h2>تعليمات اللعبة</h2>
+            <p>استخدم الأزرار للتحكم بالشخصية:</p>
+            <p>➡️➡️ للحركة يميناً ويساراً</p>
+            <p>⏫ للقفز فوق العقبات</p>
+            <p>اجمع النقاط بتجنب العقبات!</p>
+            <button id="startBtn">ابدأ اللعب</button>
+        </div>
+        
+        <div id="ui">
+            <button class="control-btn" id="leftBtn">⬅️ يسار</button>
+            <button class="control-btn" id="jumpBtn">⏫ قفز</button>
+            <button class="control-btn" id="rightBtn">➡️ يمين</button>
+        </div>
+        
+        <div id="status">💥 اصطدام!</div>
+        <button class="control-btn" id="restartBtn">🔄 إعادة اللعب</button>
+        
+        <div id="score">نقاط: 0</div>
+        <button id="pauseBtn">⏸️</button>
+    </div>
 
-<script type="module">
-import * as THREE from "three";
-import { GLTFLoader } from "GLTFLoader";
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+            "GLTFLoader": "https://unpkg.com/three@0.164.1/examples/jsm/loaders/GLTFLoader.js"
+        }
+    }
+    </script>
 
-let scene,camera,renderer,mixer,clock;
-let player, playerLane = 0;
-let obstacles = [], buildings = [];
-const lanes = [-2,0,2];
-let speed = 0.2;
-let gameOver = false;
+    <script type="module">
+    import * as THREE from "three";
+    import { GLTFLoader } from "GLTFLoader";
 
-// القفز
-let isJumping = false;
-let verticalVelocity = 0;
-const gravity = -0.01;
-const jumpStrength = 0.22;
+    // عناصر DOM
+    const scoreElem = document.getElementById("score");
+    const statusElem = document.getElementById("status");
+    const restartBtn = document.getElementById("restartBtn");
+    const instructions = document.getElementById("instructions");
+    const startBtn = document.getElementById("startBtn");
+    const loadingElem = document.getElementById("loading");
+    const pauseBtn = document.getElementById("pauseBtn");
 
-// النقاط
-let score = 0;
-const scoreElem = document.getElementById("score");
-
-init();
-animate();
-
-function init(){
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x222222);
-
-  camera = new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,400);
-  camera.position.set(0,2,-6);
-
-  scene.add(new THREE.HemisphereLight(0xffffff,0x444444,1));
-  const dir = new THREE.DirectionalLight(0xffffff,1);
-  dir.position.set(5,10,5);
-  scene.add(dir);
-
-  // شارع
-  const road = new THREE.Mesh(
-    new THREE.PlaneGeometry(6,1000),
-    new THREE.MeshStandardMaterial({color:0x333333})
-  );
-  road.rotation.x = -Math.PI/2;
-  road.position.z = 500;
-  scene.add(road);
-
-  // خطوط الشارع
-  const lineMat = new THREE.MeshBasicMaterial({color:0xffffff});
-  for(let i=0;i<120;i++){
-    const line = new THREE.Mesh(new THREE.BoxGeometry(0.2,0.01,2), lineMat);
-    line.position.set(0,0.01,i*10);
-    scene.add(line);
-  }
-
-  renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(window.innerWidth,window.innerHeight);
-  document.body.appendChild(renderer.domElement);
-
-  clock = new THREE.Clock();
-
-  // تحميل الشخصية
-  const loader = new GLTFLoader();
-  loader.load("./freefire_running_animation__female.glb",(gltf)=>{
-    player = gltf.scene;
-    player.scale.set(1.2,1.2,1.2);
-    player.position.set(0,0,0);
-    scene.add(player);
-    mixer = new THREE.AnimationMixer(player);
-    gltf.animations.forEach((clip)=>{
-      if(clip.name.toLowerCase().includes("run"))
-         mixer.clipAction(clip).play();
-    });
-  });
-
-  // العقبات
-  const coneGeo = new THREE.ConeGeometry(0.4,1,16);
-  for(let i=0;i<40;i++){
-    const coneMat = new THREE.MeshStandardMaterial({color:0xff3300});
-    const cone = new THREE.Mesh(coneGeo,coneMat);
-    cone.position.set(lanes[Math.floor(Math.random()*lanes.length)],0.5,i*12 + 20);
-    scene.add(cone);
-    obstacles.push(cone);
-  }
-
-  // المباني
-  for(let i=0;i<80;i++){
-    const w = THREE.MathUtils.randFloat(3,6);
-    const h = THREE.MathUtils.randFloat(5,15);
-    const d = THREE.MathUtils.randFloat(3,6);
-    const geo = new THREE.BoxGeometry(w,h,d);
-    const mat = new THREE.MeshStandardMaterial();
-    mat.color.setHSL(Math.random(),0.4,0.5);
-    const building = new THREE.Mesh(geo,mat);
-    const side = (i%2===0)? 8 : -8;
-    building.position.set(side,h/2,i*15);
-    scene.add(building);
-    buildings.push(building);
-  }
-
-  // التحكم
-  document.getElementById("leftBtn").onclick = ()=>{ if(playerLane>-1) playerLane--; };
-  document.getElementById("rightBtn").onclick = ()=>{ if(playerLane<1) playerLane++; };
-  document.getElementById("jumpBtn").onclick = jump;
-  document.getElementById("restartBtn").onclick = restartGame;
-
-  window.addEventListener("resize", onResize);
-  window.addEventListener("keydown",(e)=>{
-    if(e.key==="ArrowLeft" && playerLane>-1) playerLane--;
-    if(e.key==="ArrowRight" && playerLane<1) playerLane++;
-    if(e.code==="Space") jump();
-  });
-}
-
-function jump(){
-  if(!player || isJumping || gameOver) return;
-  isJumping = true;
-  verticalVelocity = jumpStrength;
-}
-
-function restartGame(){
-  gameOver = false;
-  speed = 0.2;
-  playerLane = 0;
-  if(player) player.position.set(0,0,0);
-  obstacles.forEach((c,i)=>{
-    c.position.set(lanes[Math.floor(Math.random()*lanes.length)],0.5,i*12 + 20);
-    c.material.color.set(0xff3300);
-  });
-  buildings.forEach((b,i)=>{ b.position.z = i*15; });
-  score = 0;
-  scoreElem.innerText = "نقاط: 0";
-  document.getElementById("status").style.display = "none";
-  document.getElementById("restartBtn").style.display = "none";
-}
-
-function onResize(){
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth,window.innerHeight);
-}
-
-function animate(){
-  requestAnimationFrame(animate);
-  const delta = clock.getDelta();
-  if(mixer) mixer.update(delta);
-
-  if(player && !gameOver){
-    // حركة اللاعب للأمام
-    player.position.z += speed;
-    player.position.x += (lanes[playerLane]-player.position.x)*0.2;
+    // متغيرات اللعبة
+    let scene, camera, renderer, mixer, clock;
+    let player, playerLane = 0;
+    let obstacles = [], buildings = [];
+    const lanes = [-2, 0, 2];
+    let speed = 0.2;
+    let gameOver = false;
+    let gameStarted = false;
+    let isPaused = false;
 
     // القفز
-    if(isJumping){
-      player.position.y += verticalVelocity;
-      verticalVelocity += gravity;
-      if(player.position.y <= 0){
-        player.position.y = 0;
-        isJumping = false;
-        verticalVelocity = 0;
-      }
+    let isJumping = false;
+    let verticalVelocity = 0;
+    const gravity = -0.01;
+    const jumpStrength = 0.22;
+
+    // النقاط
+    let score = 0;
+    let highScore = localStorage.getItem('3dRunnerHighScore') || 0;
+
+    // تهيئة اللعبة
+    init();
+
+    function init() {
+        // إخفاء شاشة التحميل عند بدء التهيئة
+        loadingElem.style.display = 'none';
+        
+        // تهيئة المشهد
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111122);
+        scene.fog = new THREE.Fog(0x111122, 10, 100);
+
+        // الكاميرا
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 400);
+        camera.position.set(0, 2, -6);
+
+        // الإضاءة
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+        const dir = new THREE.DirectionalLight(0xffffff, 1);
+        dir.position.set(5, 10, 5);
+        scene.add(dir);
+
+        // إضافة ضوء إضافي لتحسين الرؤية
+        const ambient = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(ambient);
+
+        // إنشاء الشارع
+        createRoad();
+
+        // المُعرض
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // تحسين الأداء
+        document.getElementById("gameContainer").appendChild(renderer.domElement);
+
+        // الساعة للرسوم المتحركة
+        clock = new THREE.Clock();
+
+        // تحميل نموذج الشخصية
+        loadPlayerModel();
+
+        // إنشاء العقبات والمباني
+        createObstacles();
+        createBuildings();
+
+        // إعداد عناصر التحكم
+        setupControls();
+
+        // إعداد مستمعي الأحداث
+        setupEventListeners();
+
+        // بدء حلقة الرسوم المتحركة
+        animate();
     }
 
-    // الكاميرا خلف اللاعب
-    const camOffset = new THREE.Vector3(0,2,-6);
-    const desiredPos = player.position.clone().add(camOffset);
-    camera.position.lerp(desiredPos,0.1);
-    camera.lookAt(player.position.x,1.5,player.position.z+6);
+    function createRoad() {
+        // الشارع الرئيسي
+        const road = new THREE.Mesh(
+            new THREE.PlaneGeometry(6, 1000),
+            new THREE.MeshStandardMaterial({ color: 0x333333 })
+        );
+        road.rotation.x = -Math.PI / 2;
+        road.position.z = 500;
+        scene.add(road);
 
-    // العقبات
-    obstacles.forEach(c=>{
-      if(c.position.z + 10 < player.position.z){
-        c.position.z = player.position.z + 400 + Math.random()*20;
-        c.position.x = lanes[Math.floor(Math.random()*lanes.length)];
-        c.material.color.set(0xff3300);
-        score++;
+        // خطوط الشارع
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        for (let i = 0; i < 120; i++) {
+            const line = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.01, 2), lineMat);
+            line.position.set(0, 0.01, i * 10);
+            scene.add(line);
+        }
+
+        // حواف الشارع
+        const edgeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        for (let i = 0; i < 200; i++) {
+            const leftEdge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.5), edgeMat);
+            leftEdge.position.set(-3, 0.1, i * 5);
+            scene.add(leftEdge);
+
+            const rightEdge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.5), edgeMat);
+            rightEdge.position.set(3, 0.1, i * 5);
+            scene.add(rightEdge);
+        }
+    }
+
+    function loadPlayerModel() {
+        const loader = new GLTFLoader();
+        // استخدام نموذج افتراضي إذا فشل التحميل
+        const boxGeometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+        const boxMaterial = new THREE.MeshStandardMaterial({ color: 0x00aaff });
+        player = new THREE.Mesh(boxGeometry, boxMaterial);
+        player.position.set(0, 0.5, 0);
+        scene.add(player);
+
+        // محاولة تحميل النموذج الحقيقي
+        loader.load("./freefire_running_animation__female.glb", (gltf) => {
+            scene.remove(player);
+            player = gltf.scene;
+            player.scale.set(1.2, 1.2, 1.2);
+            player.position.set(0, 0, 0);
+            scene.add(player);
+            mixer = new THREE.AnimationMixer(player);
+            gltf.animations.forEach((clip) => {
+                if (clip.name.toLowerCase().includes("run"))
+                    mixer.clipAction(clip).play();
+            });
+        }, undefined, (error) => {
+            console.error("فشل تحميل نموذج الشخصية، استخدام النموذج الافتراضي:", error);
+        });
+    }
+
+    function createObstacles() {
+        const coneGeo = new THREE.ConeGeometry(0.4, 1, 16);
+        const coneMat = new THREE.MeshStandardMaterial({ color: 0xff3300 });
+        
+        for (let i = 0; i < 30; i++) { // تقليل عدد العقبات لتحسين الأداء
+            const cone = new THREE.Mesh(coneGeo, coneMat.clone());
+            cone.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.5, i * 15 + 20);
+            scene.add(cone);
+            obstacles.push(cone);
+        }
+    }
+
+    function createBuildings() {
+        for (let i = 0; i < 60; i++) { // تقليل عدد المباني لتحسين الأداء
+            const w = THREE.MathUtils.randFloat(3, 6);
+            const h = THREE.MathUtils.randFloat(5, 15);
+            const d = THREE.MathUtils.randFloat(3, 6);
+            const geo = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshStandardMaterial();
+            mat.color.setHSL(Math.random(), 0.4, 0.5);
+            const building = new THREE.Mesh(geo, mat);
+            const side = (i % 2 === 0) ? 8 : -8;
+            building.position.set(side, h / 2, i * 20);
+            scene.add(building);
+            buildings.push(building);
+        }
+    }
+
+    function setupControls() {
+        document.getElementById("leftBtn").onclick = () => { if (playerLane > -1 && !isPaused) playerLane--; };
+        document.getElementById("rightBtn").onclick = () => { if (playerLane < 1 && !isPaused) playerLane++; };
+        document.getElementById("jumpBtn").onclick = jump;
+        restartBtn.onclick = restartGame;
+        startBtn.onclick = startGame;
+        pauseBtn.onclick = togglePause;
+    }
+
+    function setupEventListeners() {
+        window.addEventListener("resize", onResize);
+        
+        // التحكم باللمس (Swipe)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        document.addEventListener("touchstart", (e) => {
+            if (!gameStarted || isPaused) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener("touchend", (e) => {
+            if (!gameStarted || isPaused) return;
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            // إذا كانت الحركة أفقية أكثر من رأسية
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 50 && playerLane < 1) playerLane++; // swipe right
+                else if (diffX < -50 && playerLane > -1) playerLane--; // swipe left
+            } else {
+                if (diffY < -50) jump(); // swipe up
+            }
+        });
+        
+        // التحكم بلوحة المفاتيح
+        window.addEventListener("keydown", (e) => {
+            if (!gameStarted || isPaused) return;
+            
+            if (e.key === "ArrowLeft" && playerLane > -1) playerLane--;
+            else if (e.key === "ArrowRight" && playerLane < 1) playerLane++;
+            else if (e.code === "Space" || e.key === "ArrowUp") jump();
+            else if (e.key === "p" || e.key === "P") togglePause();
+        });
+    }
+
+    function jump() {
+        if (!player || isJumping || gameOver || !gameStarted || isPaused) return;
+        isJumping = true;
+        verticalVelocity = jumpStrength;
+        
+        // تأثير بسيط للقفز
+        if (player.scale) {
+            player.scale.y = 0.8;
+            setTimeout(() => { if (player.scale) player.scale.y = 1.2; }, 200);
+        }
+    }
+
+    function startGame() {
+        gameStarted = true;
+        instructions.style.display = 'none';
+        pauseBtn.style.display = 'block';
+    }
+
+    function togglePause() {
+        isPaused = !isPaused;
+        pauseBtn.textContent = isPaused ? '▶️' : '⏸️';
+        
+        if (isPaused) {
+            statusElem.textContent = '⏸️ توقف';
+            statusElem.style.display = 'block';
+            statusElem.style.background = 'rgba(0, 100, 255, 0.85)';
+        } else {
+            statusElem.style.display = 'none';
+        }
+    }
+
+    function restartGame() {
+        gameOver = false;
+        gameStarted = true;
+        isPaused = false;
+        speed = 0.2;
+        playerLane = 0;
+        
+        if (player) {
+            player.position.set(0, 0, 0);
+            player.rotation.set(0, 0, 0);
+        }
+        
+        obstacles.forEach((c, i) => {
+            c.position.set(lanes[Math.floor(Math.random() * lanes.length)], 0.5, i * 15 + 20);
+            c.material.color.set(0xff3300);
+        });
+        
+        buildings.forEach((b, i) => { 
+            b.position.z = i * 20; 
+        });
+        
+        score = 0;
         scoreElem.innerText = `نقاط: ${score}`;
-      }
-      if(player.position.y < 0.6){
-        const pBox = new THREE.Box3().setFromObject(player);
-        const cBox = new THREE.Box3().setFromObject(c);
-        if(pBox.intersectsBox(cBox)) collision();
-      }
-    });
+        statusElem.style.display = 'none';
+        restartBtn.style.display = 'none';
+        pauseBtn.textContent = '⏸️';
+        pauseBtn.style.display = 'block';
+    }
 
-    // المباني
-    buildings.forEach(b=>{
-      if(b.position.z + 20 < player.position.z){
-        b.position.z = player.position.z + 600 + Math.random()*50;
-        const h = THREE.MathUtils.randFloat(5,15);
-        b.scale.y = h / b.geometry.parameters.height;
-        b.position.y = h/2;
-      }
-    });
-  }
+    function onResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-  renderer.render(scene,camera);
-}
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        if (isPaused) return;
+        
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
 
-function collision(){
-  if(gameOver) return;
-  gameOver = true;
-  speed = 0;
-  document.getElementById("status").style.display = "block";
-  document.getElementById("restartBtn").style.display = "block";
-  obstacles.forEach(c => c.material.color.set(0xff0000));
-}
-</script>
+        if (player && gameStarted && !gameOver) {
+            // حركة اللاعب للأمام
+            player.position.z += speed;
+            player.position.x += (lanes[playerLane] - player.position.x) * 0.2;
+
+            // القفز
+            if (isJumping) {
+                player.position.y += verticalVelocity;
+                verticalVelocity += gravity;
+                if (player.position.y <= 0) {
+                    player.position.y = 0;
+                    isJumping = false;
+                    verticalVelocity = 0;
+                }
+            }
+
+            // تحريك الكاميرا خلف اللاعب
+            const camOffset = new THREE.Vector3(0, 2, -6);
+            const desiredPos = player.position.clone().add(camOffset);
+            camera.position.lerp(desiredPos, 0.1);
+            camera.lookAt(player.position.x, 1.5, player.position.z + 6);
+
+            // إدارة العقبات
+            obstacles.forEach(c => {
+                if (c.position.z + 10 < player.position.z) {
+                    c.position.z = player.position.z + 400 + Math.random() * 20;
+                    c.position.x = lanes[Math.floor(Math.random() * lanes.length)];
+                    c.material.color.set(0xff3300);
+                    score++;
+                    scoreElem.innerText = `نقاط: ${score}`;
+                    
+                    // زيادة السرعة تدريجياً
+                    if (score % 10 === 0) {
+                        speed += 0.02;
+                    }
+                }
+                
+                // الكشف عن التصادم
+                if (player.position.y < 0.6) {
+                    const pBox = new THREE.Box3().setFromObject(player);
+                    const cBox = new THREE.Box3().setFromObject(c);
+                    if (pBox.intersectsBox(cBox)) collision();
+                }
+            });
+
+            // إدارة المباني
+            buildings.forEach(b => {
+                if (b.position.z + 20 < player.position.z) {
+                    b.position.z = player.position.z + 600 + Math.random() * 50;
+                    const h = THREE.MathUtils.randFloat(5, 15);
+                    b.scale.y = h / b.geometry.parameters.height;
+                    b.position.y = h / 2;
+                }
+            });
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    function collision() {
+        if (gameOver) return;
+        gameOver = true;
+        speed = 0;
+        
+        // حفظ أعلى نتيجة
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('3dRunnerHighScore', highScore);
+        }
+        
+        statusElem.textContent = `💥 اصطدام! النقاط: ${score} | الأعلى: ${highScore}`;
+        statusElem.style.display = 'block';
+        statusElem.style.background = 'rgba(255, 0, 0, 0.85)';
+        restartBtn.style.display = 'block';
+        pauseBtn.style.display = 'none';
+        
+        // تأثير الاهتزاز عند الاصطدام
+        obstacles.forEach(c => c.material.color.set(0xff0000));
+        
+        if (player) {
+            player.rotation.x = Math.PI / 2;
+            player.position.y = 0.3;
+        }
+    }
+    </script>
 </body>
 </html>
